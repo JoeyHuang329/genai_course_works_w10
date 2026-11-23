@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>當圖神經網路遇上量子電路｜QGNN 入門教學簡報</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css">
+<style>
+  :root {
+    --ink: #1f2a37;
+    --muted: #5b6573;
+    --graph: #0f766e;      /* 圖／GNN：青綠 */
+    --graph-bg: #e6f4f2;
+    --quantum: #6d28d9;    /* 量子：紫 */
+    --quantum-bg: #f1ebfd;
+    --warn: #b45309;
+    --warn-bg: #fdf3e4;
+    --line: #d9dee5;
+    --r-main-font: "Noto Sans TC", "Noto Sans CJK TC", "PingFang TC", "Microsoft JhengHei", "Heiti TC", sans-serif;
+    --r-heading-font: "Noto Sans TC", "Noto Sans CJK TC", "PingFang TC", "Microsoft JhengHei", "Heiti TC", sans-serif;
+    --r-main-font-size: 25px;
+    --r-main-color: var(--ink);
+    --r-heading-color: var(--ink);
+    --r-heading-text-transform: none;
+    --r-heading-font-weight: 700;
+    --r-link-color: var(--graph);
+  }
+  .reveal .slides section { text-align: left; height: 100%; }
+  .reveal h1 { font-size: 1.9em; line-height: 1.2; }
+  .reveal h2 { font-size: 1.35em; margin-bottom: 0.45em; padding-bottom: 0.2em; border-bottom: 3px solid var(--line); }
+  .reveal h3 { font-size: 1.0em; margin: 0.2em 0 0.35em; }
+  .reveal p, .reveal li { line-height: 1.45; }
+  .reveal ol, .reveal ul { display: block; }
+  .reveal ul { margin-left: 1.1em; }
+  .reveal li { margin: 0.18em 0; }
+  .reveal table { font-size: 0.74em; margin: 0.3em 0; border-collapse: collapse; width: 100%; }
+  .reveal table th, .reveal table td { border-bottom: 1px solid var(--line); padding: 0.28em 0.5em; vertical-align: top; }
+  .reveal table th { background: #f5f7fa; text-align: left; }
+  .reveal small, .small { font-size: 0.72em; color: var(--muted); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.0em; align-items: start; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.7em; }
+  .grid-6-4 { display: grid; grid-template-columns: 6fr 4fr; gap: 1.0em; align-items: start; }
+  .card { border: 1px solid var(--line); border-radius: 10px; padding: 0.55em 0.75em; background: #fff; font-size: 0.82em; }
+  .card h3 { margin-top: 0; }
+  .g { color: var(--graph); font-weight: 700; }
+  .q { color: var(--quantum); font-weight: 700; }
+  .box-g { background: var(--graph-bg); border-left: 6px solid var(--graph); border-radius: 6px; padding: 0.45em 0.8em; }
+  .box-q { background: var(--quantum-bg); border-left: 6px solid var(--quantum); border-radius: 6px; padding: 0.45em 0.8em; }
+  .box-w { background: var(--warn-bg); border-left: 6px solid var(--warn); border-radius: 6px; padding: 0.45em 0.8em; font-size: 0.85em; }
+  .eq { background: #fafbfc; border: 1px solid var(--line); border-radius: 10px; padding: 0.1em 0.6em; margin: 0.2em 0 0.4em; }
+  .eqtag { display: inline-block; font-size: 0.6em; font-weight: 700; color: #fff; background: var(--quantum); border-radius: 4px; padding: 0.05em 0.45em; margin-right: 0.4em; vertical-align: middle; }
+  .eqtag.g { background: var(--graph); color: #fff; }
+  .lead { font-size: 0.9em; color: var(--muted); margin-top: -0.2em; }
+  .src { position: absolute; left: 0; bottom: 0; font-size: 0.5em; color: var(--muted); background: #f5f7fa; border: 1px solid var(--line); border-radius: 6px; padding: 0.15em 0.6em; max-width: 80%; text-align: left; }
+  .src a { color: var(--muted); text-decoration: underline; }
+  .tag { display: inline-block; font-size: 0.6em; border-radius: 4px; padding: 0.05em 0.45em; border: 1px solid currentColor; vertical-align: middle; margin-left: 0.2em; }
+  .tag.sim { color: #2563eb; } .tag.hw { color: #b91c1c; } .tag.claim { color: var(--warn); } .tag.infer { color: var(--muted); }
+  svg text { font-family: var(--r-main-font); }
+  .quiz .qitem { margin: 0.3em 0 0.55em; font-size: 0.84em; }
+  .quiz .opts { display: flex; flex-wrap: wrap; gap: 0.35em; margin-top: 0.2em; }
+  .quiz button { font: inherit; font-size: 0.92em; border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 0.15em 0.6em; cursor: pointer; }
+  .quiz button:hover { border-color: var(--quantum); }
+  .quiz button.right { background: #dcfce7; border-color: #16a34a; }
+  .quiz button.wrong { background: #fee2e2; border-color: #dc2626; }
+  .quiz .fb { display: none; color: var(--muted); font-size: 0.92em; margin-top: 0.15em; }
+  .quiz .fb.show { display: block; }
+  details { font-size: 0.66em; color: var(--muted); }
+  details summary { cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ============ 1 ============ -->
+<section id="s01" data-wiki="overview.md">
+  <p class="small" style="margin-bottom:0.3em">教學簡報 · 依據本作業的 LLM Wiki 製作</p>
+  <h1>當<span class="g">圖神經網路</span>遇上<span class="q">量子電路</span></h1>
+  <p class="lead">從 5 篇研究認識「量子圖神經網路（QGNN）」與它的反方向</p>
+  <div class="box-g" style="margin-top:1.0em">
+    <strong>看完這份簡報，你應該能回答：</strong>
+    <ol style="margin-top:0.3em">
+      <li>GNN 在做什麼？量子電路在做什麼？</li>
+      <li>「一張圖」可以用哪幾種方式放進量子電路？</li>
+      <li>看到「量子模型比較好」的說法時，要問哪幾個問題？</li>
+    </ol>
+  </div>
+  <p class="small" style="margin-top:0.8em">先備：會寫程式、知道矩陣乘法。不需要學過量子力學或 GNN。　操作：按 → 翻頁，按 Esc 看全部投影片。</p>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/overview.md">wiki/overview</a></div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section id="s02" data-wiki="overview.md,syntheses/graph-to-circuit-mappings.md">
+  <h2>先看地圖：這 5 篇研究在哪裡交會？</h2>
+  <div class="grid-6-4">
+    <svg viewBox="0 0 640 360" width="100%" role="img" aria-label="圖神經網路與量子電路兩個方向的關係圖" style="overflow:visible">
+      <rect x="20" y="20" width="250" height="90" rx="14" fill="#e6f4f2" stroke="#0f766e" stroke-width="2"/>
+      <text x="145" y="60" text-anchor="middle" font-size="24" font-weight="700" fill="#0f766e">圖神經網路</text>
+      <text x="145" y="90" text-anchor="middle" font-size="17" fill="#1f2a37">處理「圖」資料的模型</text>
+      <rect x="370" y="250" width="250" height="90" rx="14" fill="#f1ebfd" stroke="#6d28d9" stroke-width="2"/>
+      <text x="495" y="290" text-anchor="middle" font-size="24" font-weight="700" fill="#6d28d9">量子電路</text>
+      <text x="495" y="320" text-anchor="middle" font-size="17" fill="#1f2a37">由量子閘組成的計算</text>
+      <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f2a37"/></marker></defs>
+      <path d="M270,65 C560,65 600,150 560,245" fill="none" stroke="#6d28d9" stroke-width="3" marker-end="url(#ah)"/>
+      <text x="300" y="140" font-size="18" fill="#6d28d9" font-weight="700">方向一：用量子電路處理圖</text>
+      <text x="300" y="165" font-size="16" fill="#1f2a37">＝量子圖神經網路（QGNN）</text>
+      <text x="300" y="188" font-size="16" fill="#1f2a37">S1 S2 S3（S5 為回顧）</text>
+      <path d="M370,300 C200,300 145,220 145,115" fill="none" stroke="#0f766e" stroke-width="3" marker-end="url(#ah)"/>
+      <text x="20" y="325" font-size="17" fill="#0f766e" font-weight="700">方向二：用 GNN 分析量子電路</text>
+      <text x="20" y="348" font-size="16" fill="#1f2a37">電路本身就是一張圖（S4）</text>
+    </svg>
+    <div>
+      <h3>為什麼要把兩者放在一起？</h3>
+      <ul style="font-size:0.8em">
+        <li><span class="g">古典 GNN 的瓶頸</span>：大圖很貴、疊太多層會「過度平滑」</li>
+        <li><span class="q">結構很像</span>：圖＝節點＋邊；量子系統＝qubit＋交互作用</li>
+        <li><span class="q">量子電路難訓練</span>：用圖結構限制電路形狀是一種解法</li>
+        <li>有些圖<strong>本來就是</strong>量子系統（量子感測網路、自旋系統）</li>
+      </ul>
+    </div>
+  </div>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/overview.md">wiki/overview</a> · <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/syntheses/graph-to-circuit-mappings.md">wiki/syntheses/graph-to-circuit-mappings</a></div>
+</section>
+
+<!-- ============ 3 ============ -->
+<section id="s03" data-wiki="concepts/graph-and-gnn.md">
+  <h2>先備知識 A：GNN ＝「每個節點聽鄰居說話」</h2>
+  <div class="grid2">
+    <svg viewBox="0 0 520 330" width="100%" role="img" aria-label="中心節點接收四個鄰居訊息的示意圖">
+      <defs><marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0f766e"/></marker></defs>
+      <g stroke="#9aa5b1" stroke-width="2"><line x1="260" y1="165" x2="110" y2="70"/><line x1="260" y1="165" x2="420" y2="60"/><line x1="260" y1="165" x2="90" y2="260"/><line x1="260" y1="165" x2="430" y2="270"/><line x1="420" y1="60" x2="500" y2="160"/></g>
+      <g stroke="#0f766e" stroke-width="3" fill="none" marker-end="url(#ah3)"><path d="M130,85 L225,145"/><path d="M400,75 L295,145"/><path d="M112,248 L222,185"/><path d="M410,255 L298,188"/></g>
+      <g font-size="17" fill="#1f2a37" text-anchor="middle">
+        <circle cx="110" cy="70" r="26" fill="#fff" stroke="#1f2a37" stroke-width="2"/><text x="110" y="76">A</text>
+        <circle cx="420" cy="60" r="26" fill="#fff" stroke="#1f2a37" stroke-width="2"/><text x="420" y="66">B</text>
+        <circle cx="90" cy="260" r="26" fill="#fff" stroke="#1f2a37" stroke-width="2"/><text x="90" y="266">C</text>
+        <circle cx="430" cy="270" r="26" fill="#fff" stroke="#1f2a37" stroke-width="2"/><text x="430" y="276">D</text>
+        <circle cx="500" cy="160" r="18" fill="#fff" stroke="#9aa5b1" stroke-width="2"/><text x="500" y="166" fill="#9aa5b1">E</text>
+        <circle cx="260" cy="165" r="34" fill="#e6f4f2" stroke="#0f766e" stroke-width="3"/><text x="260" y="172" font-weight="700">我</text>
+      </g>
+      <text x="260" y="322" text-anchor="middle" font-size="16" fill="#5b6573">疊 2 層後，「我」也間接聽到 E 的資訊</text>
+    </svg>
+    <div>
+      <p style="font-size:0.85em">一層 GNN 做三件事：</p>
+      <ol style="font-size:0.85em">
+        <li><strong>收集</strong>（message passing）：鄰居把自己的特徵傳過來</li>
+        <li><strong>聚合</strong>（aggregation）：取平均或加總</li>
+        <li><strong>更新</strong>（update）：用一個可訓練的轉換，加上非線性</li>
+      </ol>
+      <p style="font-size:0.8em">疊 <em>k</em> 層 → 每個節點能「聽到」<em>k</em> 步以外的資訊。</p>
+      <div class="box-g" style="font-size:0.75em">例子：論文引用網路（節點＝論文）、分子（節點＝原子、邊＝化學鍵）</div>
+    </div>
+  </div>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/graph-and-gnn.md">wiki/concepts/graph-and-gnn</a></div>
+</section>
+
+<!-- ============ 4 ============ -->
+<section id="s04" data-wiki="concepts/graph-and-gnn.md,concepts/permutation-equivariance.md">
+  <h2><span class="eqtag g">式 1</span>GCN：把「聽鄰居說話」寫成一行矩陣運算</h2>
+  <div class="eq" style="font-size:1.1em">$$H^{(k)} = \sigma\!\left(\tilde D^{-1/2}\,\tilde A\,\tilde D^{-1/2}\; H^{(k-1)}\; W^{(k)}\right)$$</div>
+  <table style="font-size:0.84em">
+    <tr><th style="width:24%">符號</th><th style="width:38%">意義</th><th>用途</th></tr>
+    <tr><td>$H^{(k-1)}$</td><td>上一層的節點表示：每列是一個節點的特徵向量</td><td>本層的輸入；第 0 層就是原始特徵 $X$</td></tr>
+    <tr><td>$\tilde A = A + I$</td><td>鄰接矩陣加上「自己連自己」</td><td>聚合時也保留自己的資訊</td></tr>
+    <tr><td>$\tilde D^{-1/2}\tilde A\tilde D^{-1/2}$</td><td>用度數 $\tilde D$ 正規化後的鄰接矩陣</td><td>變成「鄰居的加權平均」，避免朋友多的節點數值越來越大</td></tr>
+    <tr><td>$W^{(k)}$</td><td>可訓練的權重矩陣，<strong>所有節點共用</strong></td><td>特徵轉換（像一層全連接）；共用 → 節點重新編號不影響結果</td></tr>
+    <tr><td>$\sigma$</td><td>非線性函數，例如 ReLU</td><td>讓模型能表示非線性關係</td></tr>
+  </table>
+  <p style="font-size:0.84em"><strong>白話讀法</strong>：先用 $W$ 轉換每個節點的特徵，再對鄰居取平均，最後過非線性。<span class="small">　⚠ 疊太多層會 over-smoothing：所有節點的表示變得一樣。</span></p>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/graph-and-gnn.md">wiki/concepts/graph-and-gnn</a> · <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/permutation-equivariance.md">wiki/concepts/permutation-equivariance</a></div>
+</section>
+
+<!-- ============ 5 ============ -->
+<section id="s05" data-wiki="concepts/qubit-basics.md">
+  <h2>先備知識 B：給工程師的 Qubit 101</h2>
+  <p class="lead">先忘掉「同時是 0 又是 1」，用線性代數來想最準確。</p>
+  <table style="font-size:0.9em">
+    <tr><th style="width:22%">量子的說法</th><th style="width:40%">工程師的說法</th><th>要記住的事</th></tr>
+    <tr><td>1 個 qubit</td><td>長度為 2 的單位複數向量 $(a, b)$</td><td>兩個分量的平方和為 1</td></tr>
+    <tr><td>$n$ 個 qubit</td><td>長度為 $2^n$ 的單位向量</td><td>狀態空間隨 qubit 數<strong>指數</strong>變大</td></tr>
+    <tr><td>量子閘</td><td>乘上一個 unitary 矩陣（保持長度的「旋轉」）</td><td>量子計算本身是<strong>線性</strong>的</td></tr>
+    <tr><td>參數化閘 $R_Y(\theta)$</td><td>2×2 旋轉矩陣，角度 $\theta$ 可訓練</td><td>相當於神經網路的權重</td></tr>
+    <tr><td>糾纏</td><td>整體向量無法拆成各 qubit 向量的張量積</td><td>由 CNOT 等雙 qubit 閘產生</td></tr>
+    <tr><td>量測</td><td>依「振幅的平方」機率抽樣出一個結果</td><td>要估平均值得<strong>重複跑很多次</strong>（shots）</td></tr>
+  </table>
+  <div class="box-q" style="font-size:0.88em; margin-top:0.5em">一句話：量子電路 ＝ 「一個 $2^n$ 維的向量」依序乘上一串 unitary 矩陣，最後抽樣讀出。</div>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/qubit-basics.md">wiki/concepts/qubit-basics</a></div>
+</section>
+
+<!-- ============ 6 ============ -->
+<section id="s06" data-wiki="concepts/pqc-and-vqa.md,concepts/barren-plateau.md">
+  <h2>參數化量子電路：可訓練的「量子層」</h2>
+  <svg viewBox="0 0 1180 230" width="100%" role="img" aria-label="變分量子演算法的訓練迴圈">
+    <defs><marker id="ah6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f2a37"/></marker></defs>
+    <g font-size="19" text-anchor="middle">
+      <rect x="10" y="40" width="150" height="70" rx="10" fill="#f5f7fa" stroke="#9aa5b1"/><text x="85" y="82">古典資料 x</text>
+      <rect x="210" y="40" width="190" height="70" rx="10" fill="#f1ebfd" stroke="#6d28d9"/><text x="305" y="72" fill="#6d28d9" font-weight="700">編碼 U(x)</text><text x="305" y="98" font-size="15">資料 → 量子態</text>
+      <rect x="450" y="40" width="210" height="70" rx="10" fill="#f1ebfd" stroke="#6d28d9"/><text x="555" y="72" fill="#6d28d9" font-weight="700">可訓練 W(θ)</text><text x="555" y="98" font-size="15">旋轉閘＋糾纏閘（ansatz）</text>
+      <rect x="710" y="40" width="160" height="70" rx="10" fill="#f1ebfd" stroke="#6d28d9"/><text x="790" y="72" fill="#6d28d9" font-weight="700">量測</text><text x="790" y="98" font-size="15">重複抽樣</text>
+      <rect x="920" y="40" width="240" height="70" rx="10" fill="#f5f7fa" stroke="#9aa5b1"/><text x="1040" y="82">輸出 → loss</text>
+      <rect x="440" y="160" width="300" height="60" rx="10" fill="#fff" stroke="#1f2a37"/><text x="590" y="197">古典最佳化器更新 θ</text>
+    </g>
+    <g stroke="#1f2a37" stroke-width="2.5" fill="none" marker-end="url(#ah6)">
+      <path d="M160,75 L205,75"/><path d="M400,75 L445,75"/><path d="M660,75 L705,75"/><path d="M870,75 L915,75"/>
+      <path d="M1040,110 L1040,190 L745,190"/><path d="M590,160 L590,115"/>
+    </g>
+    <text x="90" y="200" font-size="16" fill="#6d28d9">紫色＝在量子電腦上跑</text>
+  </svg>
+  <div class="grid2" style="margin-top:0.2em">
+    <div class="card"><h3>跟神經網路的對應</h3>θ 就是權重；「量子前向、古典更新」交替進行，這叫<strong>變分量子演算法（VQA）</strong>，是目前含雜訊、中等規模量子電腦（NISQ）最實際的用法。</div>
+    <div class="card" style="border-color:var(--warn)"><h3 style="color:var(--warn)">最大的坑：Barren plateau（貧瘠高原）</h3>qubit 變多時，loss 對參數的梯度<strong>平均為 0、變異數指數縮小</strong>，最佳化器找不到方向。古典是「層數」造成梯度消失，量子是「qubit 數」就會造成。</div>
+  </div>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/pqc-and-vqa.md">wiki/concepts/pqc-and-vqa</a> · <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/barren-plateau.md">wiki/concepts/barren-plateau</a></div>
+</section>
+
+<!-- ============ 7 ============ -->
+<section id="s07" data-wiki="concepts/data-encoding.md">
+  <h2>核心問題：一張圖要怎麼「放進」量子電路？</h2>
+  <p class="lead">古典資料必須先編碼成量子態。四種常見做法：</p>
+  <table style="font-size:0.86em">
+    <tr><th>編碼</th><th>做法</th><th>qubit 數</th><th>準備成本</th><th>本簡報的例子</th></tr>
+    <tr><td><strong>Angle</strong></td><td>一個數字 → 一個旋轉角</td><td>約特徵數 $d$</td><td>約 $d$ 個旋轉閘</td><td>S3 分子模型</td></tr>
+    <tr><td><strong>Basis</strong></td><td>二進位資料 → 對應的基底態</td><td>依位元數</td><td>低</td><td>—</td></tr>
+    <tr><td><strong>Amplitude</strong></td><td>整個向量 → 狀態向量的振幅</td><td>只要約 $\log_2 d$</td><td><strong>一般仍需約 $d$ 個操作</strong></td><td>S2 QuGCN</td></tr>
+    <tr><td><strong>Hamiltonian</strong></td><td>圖的<strong>邊</strong> → qubit 之間的交互作用</td><td>約節點數</td><td>每層約「邊數」個雙 qubit 操作</td><td>S1、S3</td></tr>
+  </table>
+  <div class="box-w" style="margin-top:0.7em; font-size:0.95em"><strong>這一頁最重要的觀念：qubit 少 ≠ 整體比較快。</strong>Amplitude encoding 看起來省了指數級的 qubit，但把 $d$ 個數字放進振幅，一般就得做約 $d$ 次操作（除非假設有 QRAM 這類目前不存在實用版的硬體）。後面看 S2 時要記得這件事。</div>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/data-encoding.md">wiki/concepts/data-encoding</a></div>
+</section>
+
+<!-- ============ 8 ============ -->
+<section id="s08" data-wiki="concepts/hamiltonian-and-ising.md">
+  <h2>關鍵直覺：圖 → Hamiltonian → 電路</h2>
+  <div class="grid2">
+    <div style="font-size:0.84em">
+      <p><strong>Hamiltonian $\hat H$</strong>：描述量子系統能量的 Hermitian 矩陣。讓系統「跑時間 $t$」＝乘上 $e^{-it\hat H}$，而它<strong>一定是 unitary</strong> → 可以直接做成量子電路。</p>
+      <p><strong>Ising 模型</strong>＝最簡單的「圖上的 Hamiltonian」：</p>
+      <ul>
+        <li>每個<span class="g">節點</span>一個 qubit（一個「自旋」）</li>
+        <li>每條<span class="g">邊</span> $(j,k)$ 一項 $J_{jk} Z_j Z_k$：兩個自旋想同向還是反向</li>
+        <li>$J_{jk}$ 就像邊的權重</li>
+      </ul>
+      <div class="box-q" style="font-size:0.85em">所以：<strong>只在有邊的地方放交互作用</strong>，電路的形狀就由圖決定。這就是 QGNN 的起點。</div>
+    </div>
+    <svg viewBox="0 0 460 360" width="100%" role="img" aria-label="四個 qubit 組成的環狀 Ising 模型">
+      <g stroke="#6d28d9" stroke-width="4"><line x1="110" y1="90" x2="350" y2="90"/><line x1="350" y1="90" x2="350" y2="290"/><line x1="350" y1="290" x2="110" y2="290"/><line x1="110" y1="290" x2="110" y2="90"/></g>
+      <g font-size="18" fill="#6d28d9" text-anchor="middle"><text x="230" y="78">J₁₂ Z₁Z₂</text><text x="410" y="195">J₂₃</text><text x="230" y="320">J₃₄</text><text x="55" y="195">J₄₁</text></g>
+      <g font-size="18" text-anchor="middle">
+        <circle cx="110" cy="90" r="30" fill="#fff" stroke="#1f2a37" stroke-width="2"/><text x="110" y="97">q1</text>
+        <circle cx="350" cy="90" r="30" fill="#fff" stroke="#1f2a37" stroke-width="2"/><text x="350" y="97">q2</text>
+        <circle cx="350" cy="290" r="30" fill="#fff" stroke="#1f2a37" stroke-width="2"/><text x="350" y="297">q3</text>
+        <circle cx="110" cy="290" r="30" fill="#fff" stroke="#1f2a37" stroke-width="2"/><text x="110" y="297">q4</text>
+      </g>
+      <text x="230" y="352" text-anchor="middle" font-size="15" fill="#5b6573">q1 與 q3 沒有邊 → 沒有直接交互作用</text>
+    </svg>
+  </div>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/hamiltonian-and-ising.md">wiki/concepts/hamiltonian-and-ising</a></div>
+</section>
+
+<!-- ============ 9 ============ -->
+<section id="s09" data-wiki="models/qgnn-general-ansatz.md">
+  <h2><span class="eqtag">式 2</span>S1 的 QGNN：由圖決定形狀的量子電路</h2>
+  <div class="eq">$$\hat U_{\text{QGNN}} = \prod_{p=1}^{P}\prod_{q=1}^{Q} e^{-i\,\eta_{pq}\,\hat H_q},\qquad \hat H_q=\sum_{\{j,k\}\in E} W_{qjk}\,\hat O_j\hat P_k+\sum_{v\in V} B_{qv}\,\hat R_v$$</div>
+  <table style="font-size:0.68em">
+    <tr><th style="width:22%">符號</th><th style="width:38%">意義</th><th>用途（對應 GNN 的什麼）</th></tr>
+    <tr><td>$P$、$Q$</td><td>整串重複 $P$ 次；每次有 $Q$ 個不同的 Hamiltonian</td><td>相當於「層數」與「每層的子步驟」</td></tr>
+    <tr><td>$e^{-i\eta_{pq}\hat H_q}$</td><td>讓系統在 $\hat H_q$ 下演化時間 $\eta_{pq}$</td><td>一定是 unitary，可直接做成量子閘；$\eta$ 可訓練</td></tr>
+    <tr><td>$\sum_{\{j,k\}\in E}$</td><td><strong>只對圖上的邊加總</strong></td><td>圖結構就是從這裡進入電路</td></tr>
+    <tr><td>$\hat O_j\hat P_k$、$W_{qjk}$</td><td>作用在相連節點 $j,k$ 上的一對算符與其係數</td><td>邊上的交互作用 ＝ 訊息傳遞；$W$ 像邊權重</td></tr>
+    <tr><td>$\hat R_v$、$B_{qv}$</td><td>單一節點上的算符與係數</td><td>節點自己的更新／偏置</td></tr>
+  </table>
+  <div class="grid2" style="font-size:0.74em; margin-top:0.25em">
+    <div class="box-q"><strong>QGRNN</strong>：$\eta_{pq}\to\eta_q$，每次重複用同一組時間參數 → 像 <strong>RNN</strong>，適合學「量子系統怎麼隨時間演化」</div>
+    <div class="box-g"><strong>QGCNN</strong>：$W_{qjk}\to W_q$，所有邊共用係數 → 像 <strong>CNN / GCN</strong> 的權重共享，節點重新編號也不影響</div>
+  </div>
+  <p class="small" style="margin-top:0.2em">為什麼要綁參數？完全自由的電路參數太多、容易掉進 barren plateau；綁參數＝加入結構先驗。（式中省略了原文的次要下標 r）</p>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/models/qgnn-general-ansatz.md">wiki/models/qgnn-general-ansatz</a></div>
+</section>
+
+<!-- ============ 10 ============ -->
+<section id="s10" data-wiki="sources/S1-verdon-2019-qgnn.md,models/qgnn-general-ansatz.md,models/qsgcnn.md">
+  <h2>S1 用這些電路做了什麼？</h2>
+  <div class="grid3" style="margin-top:0.4em">
+    <div class="card"><h3 class="q">QGRNN：學回 Ising 模型</h3>給定某個未知 Ising 系統在不同時間的量子態，從「隨機的密集連接圖」出發訓練，<strong>學回了真正的環狀結構與參數</strong>。<br><span class="tag sim">模擬實驗</span></div>
+    <div class="card"><h3 class="q">QGCNN：準備 GHZ 糾纏態</h3>在不知道網路全貌的情況下，學會讓多個 qubit 進入「全 0 或全 1」的糾纏態；7 節點網路的感測訊號頻率提高約 7 倍。<br><span class="tag sim">模擬實驗</span></div>
+    <div class="card"><h3 class="q">QSGCNN：分群與圖同構</h3><strong>譜聚類</strong>（依圖的結構把節點分群）得到合理結果；判斷兩張隨機圖是否<strong>同構</strong>（是否只差在節點編號），6 與 15 節點的測試準確率多為 100%。<br><span class="tag sim">模擬實驗</span></div>
+  </div>
+  <div class="box-w" style="margin-top:0.6em">讀這類結果時要注意：
+    <ul style="margin:0.2em 0 0 1em">
+      <li>全部是<strong>小規模模擬</strong>，沒有在真正的量子硬體上跑。</li>
+      <li>圖同構的測試集只有 50 對圖，100% 的統計意義有限。<span class="tag infer">Wiki 推論</span></li>
+      <li>這些任務都很「量子原生」：圖本身就是一個量子系統。</li>
+    </ul>
+  </div>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/sources/S1-verdon-2019-qgnn.md">wiki/sources/S1-verdon-2019-qgnn</a> · <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/models/qgnn-general-ansatz.md">wiki/models/qgnn-general-ansatz</a> · <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/models/qsgcnn.md">wiki/models/qsgcnn</a></div>
+</section>
+
+<!-- ============ 11 ============ -->
+<section id="s11" data-wiki="models/qsgcnn.md">
+  <h2><span class="eqtag">式 3</span>QSGCNN：彈簧網路裡冒出了圖 Laplacian</h2>
+  <div class="grid-6-4">
+    <div>
+      <div class="eq">$$\hat x_j \;\mapsto\; \hat x_j + \gamma\,\hat p_j - \alpha\gamma\sum_{k\in V} L_{jk}\,\hat x_k$$</div>
+      <table style="font-size:0.68em">
+        <tr><th style="width:28%">符號</th><th style="width:36%">意義</th><th>用途</th></tr>
+        <tr><td>$\hat x_j$、$\hat p_j$</td><td>節點 $j$ 的「位置」與「動量」</td><td>節點的特徵，與它的「速度」</td></tr>
+        <tr><td>$\alpha$、$\gamma$</td><td>耦合演化、動能演化各跑多久</td><td><strong>可訓練參數</strong>，像每層的權重</td></tr>
+        <tr><td>$L_{jk}$</td><td>加權圖 Laplacian（度數矩陣 − 鄰接矩陣）</td><td>和頻譜式 GCN 用的是<strong>同一個矩陣</strong></td></tr>
+        <tr><td>$-\alpha\gamma\sum_k L_{jk}\hat x_k$</td><td>依自己與鄰居的差距修正</td><td>把節點往鄰居拉近 ＝ 圖卷積／平滑</td></tr>
+        <tr><td>$\gamma\hat p_j$</td><td>動量造成的位移</td><td>和古典 GCN 不同：動量會跨層累積</td></tr>
+      </table>
+    </div>
+    <div style="font-size:0.76em">
+      <h3>彈簧比喻</h3>
+      <ul>
+        <li>每個節點是彈簧上的一顆小球（量子振子）</li>
+        <li><span class="g">邊＝彈簧</span>：相連的球互相拉近 → <strong>訊息傳遞</strong></li>
+        <li>動能項：球依動量移動 → <strong>節點更新</strong></li>
+        <li>非二次的位能（如雙井形狀）→ 提供<strong>非線性</strong>，扮演 ReLU 的角色</li>
+      </ul>
+      <p class="small">這裡用「Heisenberg 觀點」：不追蹤量子態，而是追蹤 $\hat x_j$ 怎麼變，所以長得像神經網路的一層。需要連續變數量子硬體，或用多個 qubit 模擬。</p>
+    </div>
+  </div>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/models/qsgcnn.md">wiki/models/qsgcnn</a></div>
+</section>
+
+<!-- ============ 12 ============ -->
+<section id="s12" data-wiki="models/qugcn-givens.md,sources/S2-hu-2022-qugcn.md">
+  <h2><span class="eqtag">式 4</span>S2 的 QuGCN：一條邊＝一次 Givens 旋轉</h2>
+  <div class="grid-6-4">
+    <div>
+      <div class="eq">$$\begin{pmatrix} s_p' \\ s_q' \end{pmatrix} = \begin{pmatrix} \cos\frac{\theta}{2} & \sin\frac{\theta}{2} \\ -\sin\frac{\theta}{2} & \cos\frac{\theta}{2}\end{pmatrix}\begin{pmatrix} s_p \\ s_q \end{pmatrix}$$</div>
+      <table style="font-size:0.7em">
+        <tr><th style="width:24%">符號</th><th style="width:40%">意義</th><th>用途</th></tr>
+        <tr><td>$s_p$、$s_q$</td><td>狀態向量的第 $p$、$q$ 個振幅＝節點 $p$、$q$ 的特徵值</td><td>這條邊兩端的節點</td></tr>
+        <tr><td>$\cos\frac{\theta}{2}$</td><td>保留自己的比例</td><td>類似 GCN 的自環</td></tr>
+        <tr><td>$\sin\frac{\theta}{2}$</td><td>從鄰居拿來的比例</td><td>類似鄰接矩陣的非零項</td></tr>
+        <tr><td>$\theta$</td><td>旋轉角；S2 中<strong>所有邊共用同一個</strong>，是超參數</td><td>控制「傳多少給鄰居」</td></tr>
+        <tr><td>2×2 矩陣</td><td>和量子閘 $R_Y$ 是同一種旋轉</td><td>所以能用真正的量子閘實作</td></tr>
+      </table>
+    </div>
+    <div style="font-size:0.76em">
+      <h3>整個流程</h3>
+      <ol>
+        <li><span class="q">Amplitude encoding</span>：把 $N$ 個節點的值放進 $\log_2 N$ 個 qubit 的振幅</li>
+        <li><span class="q">每條邊一次旋轉</span>：兩個振幅互相混合，其他節點不受影響 → 近似「乘上鄰接矩陣」</li>
+        <li><span class="q">VQC</span> 負責權重 $W$（可訓練的部分在這裡）</li>
+        <li>量測、分組加總、Softmax 分類</li>
+      </ol>
+      <p class="small">若 $p$、$q$ 的二進位差很多位，要先用 X、CNOT 把振幅搬到相鄰位置，再做受控旋轉，每次約需 $(\log N)^2$ 個基本閘。</p>
+    </div>
+  </div>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/models/qugcn-givens.md">wiki/models/qugcn-givens</a> · <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/sources/S2-hu-2022-qugcn.md">wiki/sources/S2-hu-2022-qugcn</a></div>
+</section>
+
+<!-- ============ 13 ============ -->
+<section id="s13" data-wiki="models/qugcn-givens.md,sources/S2-hu-2022-qugcn.md,concepts/data-encoding.md,concepts/advantage-vs-utility.md">
+  <h2>QuGCN 真的比較快嗎？看成本表</h2>
+  <p class="lead">$L$ 層、$N$ 個節點、$D$ 維特徵、$E$ 條邊（作者的操作數分析）</p>
+  <table style="font-size:0.8em">
+    <tr><th></th><th>古典 GCN</th><th>QuGCN</th><th>誰贏？</th></tr>
+    <tr><td>特徵轉換 $HW$</td><td>$O(LND^2)$</td><td>$O(LN\log D)$</td><td class="q">特徵維度上 QuGCN 好很多</td></tr>
+    <tr><td>鄰居聚合 $\hat AH$</td><td>$O(L(E+N)D)$</td><td>$O(L\log^2 N\cdot ED)$</td><td class="g">多了 $\log^2 N$，節點多時古典較好</td></tr>
+  </table>
+  <div class="grid2" style="margin-top:0.4em">
+    <div class="card"><h3>實驗結果 <span class="tag sim">模擬實驗</span></h3>Cora 引文網路的子集（128～1024 個節點），二分類：準確率高於「只有量子層、沒有圖結構」的模型，接近古典 GCN。依作者的估算，256 維特徵時，節點少於 128 個 QuGCN 的操作數才比較少。</div>
+    <div class="card" style="border-color:var(--warn)"><h3 style="color:var(--warn)">還沒算進去的成本</h3>
+      <ul style="margin-left:1em">
+        <li>Amplitude encoding 的<strong>資料載入</strong>（一般約 $N$ 次操作）<span class="tag infer">Wiki 推論</span></li>
+        <li>量測要重複很多次</li>
+        <li>作者自己也承認目前的 Givens 實作「不是好的設計」</li>
+      </ul>
+    </div>
+  </div>
+  <p class="small" style="margin-top:0.3em">結論：這是「某個維度上有潛力」，不能說成「量子比古典快」。</p>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/models/qugcn-givens.md">wiki/models/qugcn-givens</a> · <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/sources/S2-hu-2022-qugcn.md">wiki/sources/S2</a> · <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/data-encoding.md">wiki/concepts/data-encoding</a> · <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/advantage-vs-utility.md">wiki/concepts/advantage-vs-utility</a></div>
+</section>
+
+<!-- ============ 14 ============ -->
+<section id="s14" data-wiki="models/edu-qgc.md,concepts/permutation-equivariance.md">
+  <h2><span class="eqtag">式 5</span>S3 的 EDU-QGC：天生不怕節點重新編號</h2>
+  <div class="grid-6-4">
+    <div>
+      <div class="eq">$$\text{EDU} = (V^\dagger \otimes V^\dagger)\; D\; (V \otimes V)$$</div>
+      <table style="font-size:0.7em">
+        <tr><th style="width:22%">符號</th><th style="width:40%">意義</th><th>用途</th></tr>
+        <tr><td>$V\otimes V$</td><td>兩個 qubit 各做<strong>同一個</strong>單 qubit 旋轉；參數依化學鍵種類而定</td><td>兩邊一樣 → 對調兩個節點結果不變</td></tr>
+        <tr><td>$D$</td><td>只改相位的雙 qubit 閘（S3 用 $R_{ZZ}$）；角度依層數而定</td><td>真正產生交互作用（糾纏）的部分</td></tr>
+        <tr><td>$V^\dagger\otimes V^\dagger$</td><td>把座標轉回來</td><td>讓整個閘保持對稱</td></tr>
+      </table>
+      <p style="font-size:0.72em"><strong>讀出</strong>：把所有 qubit 的量測取平均 → 和節點順序無關。</p>
+    </div>
+    <div style="font-size:0.76em">
+      <h3>電路長相</h3>
+      <ul>
+        <li>一個重原子 ＝ 一個 qubit</li>
+        <li><span class="g">節點層</span>：每個 qubit 做同樣的旋轉 → 節點更新</li>
+        <li><span class="g">連結層</span>：每條鍵放一個 EDU → 訊息傳遞</li>
+      </ul>
+      <div class="box-q" style="font-size:0.9em">為什麼要等變？分子裡原子的編號是人為的，答案不該因此改變（就像 CNN 不在意貓在圖片左邊或右邊）。</div>
+      <p class="small">工程細節：參數不同的 EDU 不一定可交換，所以要強制規定套用順序（同一種鍵一起做）。S3 引用的理論結果指出這類電路的區分能力可超越 1-WL 測試（判斷兩張圖是否可能相同的經典演算法，一般 GNN 的區分能力上限） <span class="tag">引述</span></p>
+    </div>
+  </div>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/models/edu-qgc.md">wiki/models/edu-qgc</a> · <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/permutation-equivariance.md">wiki/concepts/permutation-equivariance</a></div>
+</section>
+
+<!-- ============ 15 ============ -->
+<section id="s15" data-wiki="sources/S3-ryu-2023-materials.md,concepts/advantage-vs-utility.md">
+  <h2>S3 的實驗：預測分子的 HOMO-LUMO 能隙</h2>
+  <div class="grid2">
+    <div>
+      <p style="font-size:0.74em">QM9 小分子（最多 9 個重原子），預測一個與穩定性、光電性質相關的能量差。無雜訊模擬，測試集 1,000 個分子。</p>
+      <svg viewBox="0 0 520 250" width="100%" role="img" aria-label="三個模型的測試平均絕對誤差長條圖">
+        <text x="10" y="20" font-size="15" fill="#5b6573">測試 MAE（單位 10⁻² Ha；Ha＝Hartree 能量單位，越低越好）</text>
+        <g font-size="16">
+          <text x="10" y="70">QGNN 基本版</text><rect x="170" y="52" width="282" height="26" fill="#a78bfa"/><text x="460" y="71">1.88</text>
+          <text x="10" y="130">古典 GGNN 最佳</text><rect x="170" y="112" width="266" height="26" fill="#5eead4"/><text x="444" y="131">1.77</text>
+          <text x="10" y="190">QGNN＋master node</text><rect x="170" y="172" width="227" height="26" fill="#6d28d9"/><text x="405" y="191">1.51</text>
+        </g>
+        <text x="10" y="240" font-size="14" fill="#5b6573">文獻中的 SOTA 古典模型 ALIGNN 誤差約再低 10 倍（設定不同，未畫入）</text>
+      </svg>
+    </div>
+    <div style="font-size:0.74em">
+      <div class="card" style="margin-bottom:0.5em"><h3>作者的主張 <span class="tag claim">作者宣稱</span></h3>可訓練參數數量相近時，QGNN 的 test loss 比古典模型低、收斂較快。</div>
+      <div class="card" style="border-color:var(--warn)"><h3 style="color:var(--warn)">但要一起看</h3>
+        <ul style="margin-left:1em">
+          <li>比的是<strong>本文自己的</strong>古典 baseline，不是最強的古典模型</li>
+          <li>古典模型跑 3 次取最好；量子模型只跑 1 次，初始權重全設為 1</li>
+          <li>master node（連到所有原子的虛擬節點）多用了 1 個 qubit、約 2 倍參數</li>
+        </ul>
+      </div>
+      <p class="box-q" style="font-size:0.9em">→ 這是 <strong>quantum utility</strong>（實務效益）的典型例子，不是 quantum advantage。</p>
+    </div>
+  </div>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/sources/S3-ryu-2023-materials.md">wiki/sources/S3-ryu-2023-materials</a> · <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/advantage-vs-utility.md">wiki/concepts/advantage-vs-utility</a></div>
+</section>
+
+<!-- ============ 16 ============ -->
+<section id="s16" data-wiki="concepts/circuits-as-graphs.md,models/gnn-expressibility-predictor.md,sources/S4-aktar-2024-expressibility.md">
+  <h2>反方向（S4）：量子電路本身就是一張圖</h2>
+  <div class="grid2">
+    <svg viewBox="0 0 540 300" width="100%" role="img" aria-label="兩個 qubit 的電路轉成有向圖">
+      <text x="10" y="22" font-size="16" fill="#5b6573">電路</text>
+      <g stroke="#1f2a37" stroke-width="2"><line x1="50" y1="60" x2="300" y2="60"/><line x1="50" y1="120" x2="300" y2="120"/><line x1="165" y1="60" x2="165" y2="120"/></g>
+      <g font-size="15" text-anchor="middle"><text x="30" y="65">q0</text><text x="30" y="125">q1</text>
+        <rect x="80" y="45" width="46" height="30" fill="#f1ebfd" stroke="#6d28d9"/><text x="103" y="66">RY</text>
+        <rect x="80" y="105" width="46" height="30" fill="#f1ebfd" stroke="#6d28d9"/><text x="103" y="126">RY</text>
+        <circle cx="165" cy="60" r="7" fill="#1f2a37"/><circle cx="165" cy="120" r="13" fill="#fff" stroke="#1f2a37" stroke-width="2"/><text x="165" y="125">+</text>
+        <rect x="205" y="45" width="46" height="30" fill="#f1ebfd" stroke="#6d28d9"/><text x="228" y="66">RY</text>
+        <rect x="205" y="105" width="46" height="30" fill="#f1ebfd" stroke="#6d28d9"/><text x="228" y="126">RY</text></g>
+      <text x="10" y="178" font-size="16" fill="#5b6573">變成圖（閘＝節點，qubit 線上的先後＝邊）</text>
+      <defs><marker id="ah16" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0f766e"/></marker></defs>
+      <g stroke="#0f766e" stroke-width="2" marker-end="url(#ah16)"><line x1="62" y1="215" x2="96" y2="215"/><line x1="62" y1="270" x2="96" y2="270"/><line x1="136" y1="218" x2="178" y2="238"/><line x1="136" y1="267" x2="178" y2="249"/><line x1="230" y1="238" x2="270" y2="218"/><line x1="230" y1="249" x2="270" y2="267"/><line x1="320" y1="215" x2="356" y2="215"/><line x1="320" y1="270" x2="356" y2="270"/></g>
+      <g font-size="13" text-anchor="middle">
+        <circle cx="45" cy="215" r="16" fill="#f5f7fa" stroke="#9aa5b1"/><text x="45" y="220">in</text><circle cx="45" cy="270" r="16" fill="#f5f7fa" stroke="#9aa5b1"/><text x="45" y="275">in</text>
+        <circle cx="117" cy="215" r="18" fill="#e6f4f2" stroke="#0f766e"/><text x="117" y="220">RY</text><circle cx="117" cy="270" r="18" fill="#e6f4f2" stroke="#0f766e"/><text x="117" y="275">RY</text>
+        <circle cx="204" cy="243" r="24" fill="#e6f4f2" stroke="#0f766e"/><text x="204" y="248">CX</text>
+        <circle cx="294" cy="215" r="18" fill="#e6f4f2" stroke="#0f766e"/><text x="294" y="220">RY</text><circle cx="294" cy="270" r="18" fill="#e6f4f2" stroke="#0f766e"/><text x="294" y="275">RY</text>
+        <circle cx="376" cy="215" r="16" fill="#f5f7fa" stroke="#9aa5b1"/><text x="376" y="220">out</text><circle cx="376" cy="270" r="16" fill="#f5f7fa" stroke="#9aa5b1"/><text x="376" y="275">out</text></g>
+      <text x="410" y="236" font-size="14" fill="#5b6573">每個節點附</text><text x="410" y="256" font-size="14" fill="#5b6573">23 維特徵</text>
+    </svg>
+    <div style="font-size:0.74em">
+      <p><strong>目的</strong>：挑選電路結構時想知道它的「表達能力」（下一頁），但直接算要對每個電路抽樣 5,000 次，太貴。</p>
+      <p><strong>做法</strong>：用<span class="g">古典的 graph transformer</span>（帶注意力機制的 GNN）讀電路圖，直接預測。節點特徵包含閘的種類、作用在哪個 qubit、那個 qubit 的<strong>硬體雜訊參數</strong>。</p>
+      <ul style="margin-left:1em">
+        <li>測試誤差 RMSE 約 0.05（無雜訊）／0.06（模擬雜訊）<span class="tag sim">模擬實驗</span></li>
+        <li>只用 ≤5 qubit 電路訓練，就能外插到 10 qubit</li>
+        <li>真實 IBM 硬體只測了 5 個電路，RMSE 約 0.1 <span class="tag hw">硬體實驗</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/circuits-as-graphs.md">wiki/concepts/circuits-as-graphs</a> · <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/models/gnn-expressibility-predictor.md">wiki/models/gnn-expressibility-predictor</a> · <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/sources/S4-aktar-2024-expressibility.md">wiki/sources/S4</a></div>
+</section>
+
+<!-- ============ 17 ============ -->
+<section id="s17" data-wiki="concepts/expressibility.md">
+  <h2><span class="eqtag">式 6</span>Expressibility：電路能多均勻地「鋪滿」所有可能？</h2>
+  <div class="eq">$$\text{Expr} = D_{KL}\!\left(P_{\text{PQC}}(F)\;\middle\|\;P_{\text{Haar}}(F)\right), \qquad F = \left|\langle\psi_{\theta}\,|\,\psi_{\phi}\rangle\right|^2$$</div>
+  <table style="font-size:0.82em">
+    <tr><th style="width:22%">符號</th><th style="width:40%">意義</th><th>用途</th></tr>
+    <tr><td>$\psi_\theta$、$\psi_\phi$</td><td>用兩組<strong>隨機參數</strong>跑同一個電路得到的兩個量子態</td><td>抽樣電路「能做出什麼」</td></tr>
+    <tr><td>$F$</td><td>兩個態的重疊程度（fidelity），0～1</td><td>量「兩個態有多像」</td></tr>
+    <tr><td>$P_{\text{PQC}}(F)$</td><td>重複抽很多次得到的 $F$ 的分布（直方圖）</td><td>這個電路的「指紋」</td></tr>
+    <tr><td>$P_{\text{Haar}}(F)$</td><td>完全隨機的量子態之間 $F$ 的分布（有公式解）</td><td>「最有表達力」的參考標準</td></tr>
+    <tr><td>$D_{KL}$</td><td>KL 散度：兩個分布差多少</td><td><strong>越小越有表達力</strong></td></tr>
+  </table>
+  <div class="grid2" style="font-size:0.82em; margin-top:0.4em">
+    <div class="box-q">比喻：狀態空間是一顆球的表面。好的電路隨便轉轉旋鈕，打出去的點會<strong>散佈整顆球</strong>；差的電路，點都擠在一小塊。</div>
+    <div class="box-w">為什麼貴？每個電路要抽約 5,000 組參數對；在有雜訊的硬體上數值還會改變 → 這就是 S4 想用 GNN 預測它的原因。</div>
+  </div>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/expressibility.md">wiki/concepts/expressibility</a></div>
+</section>
+
+<!-- ============ 18 ============ -->
+<section id="s18" data-wiki="concepts/qgnn-taxonomy.md,concepts/advantage-vs-utility.md">
+  <h2>統整：怎麼分類、怎麼評價？（依 S5 回顧）</h2>
+  <div class="grid2">
+    <div style="font-size:0.84em">
+      <h3>分類看「量子電路扮演什麼角色」</h3>
+      <table style="font-size:0.95em">
+        <tr><th>類別</th><th>量子負責</th><th>本簡報</th></tr>
+        <tr><td><strong>Fully Quantum</strong></td><td>整個圖學習流程</td><td>S1、S2、S3</td></tr>
+        <tr><td><strong>Hybrid</strong></td><td>核心的訊息傳遞／聚合</td><td>—</td></tr>
+        <tr><td><strong>Quantum-Assisted</strong></td><td>只做前處理或最後分類</td><td>—</td></tr>
+      </table>
+      <p class="small">量子整合越深：概念上越有潛力，但越難在現有硬體上擴展。S4 是用古典 GNN 分析電路，不在這個分類裡。</p>
+    </div>
+    <div style="font-size:0.84em">
+      <h3>「量子比較好」有三種強度</h3>
+      <table style="font-size:0.95em">
+        <tr><th>用詞</th><th>意思</th></tr>
+        <tr><td class="q">Quantum advantage</td><td>可證明勝過<strong>最強</strong>的古典方法，且成本算整條管線。目前 QGNN 尚無</td></tr>
+        <tr><td class="q">Quantum utility</td><td>有實務好處：參數少、收斂快、準確率接近。<strong>多數結果屬於這級</strong></td></tr>
+        <tr><td class="q">Quantum-inspired</td><td>借量子的點子，在古典電腦上跑</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="box-g" style="font-size:0.84em; margin-top:0.6em"><strong>看到宣稱時問四個問題：</strong>①比的是最強的古典方法嗎？②資料載入、量測次數算進成本了嗎？③是模擬還是真機？有雜訊嗎？④實驗公平嗎（調參、初始化次數）？</div>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/qgnn-taxonomy.md">wiki/concepts/qgnn-taxonomy</a> · <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/advantage-vs-utility.md">wiki/concepts/advantage-vs-utility</a></div>
+</section>
+
+<!-- ============ 19 ============ -->
+<section id="s19" data-wiki="concepts/qgnn-challenges.md,overview.md">
+  <h2>還有哪些障礙？以及這份簡報的三個重點</h2>
+  <div class="grid2">
+    <div style="font-size:0.86em">
+      <h3>五大挑戰</h3>
+      <table style="font-size:0.95em">
+        <tr><td><strong>雜訊</strong></td><td>電路越長錯越多；多數研究只在模擬器上跑</td></tr>
+        <tr><td><strong>擴展性</strong></td><td>一節點一 qubit → qubit 數隨節點數成長；每層約「邊數」個雙 qubit 閘</td></tr>
+        <tr><td><strong>沒有保證</strong></td><td>架構多為經驗設計，難以理論分析</td></tr>
+        <tr><td><strong>Barren plateau</strong></td><td>梯度隨 qubit 數消失</td></tr>
+        <tr><td><strong>初始化</strong></td><td>隨機初始化容易掉進高原，卻很少被研究</td></tr>
+      </table>
+    </div>
+    <div style="font-size:0.9em">
+      <h3>帶走三件事</h3>
+      <ol>
+        <li><strong>結構對應</strong>：圖的節點＋邊 ↔ qubit＋交互作用；三種把圖放進電路的方法（Hamiltonian、Givens 旋轉、對稱閘）。</li>
+        <li><strong>雙向關係</strong>：可以用量子電路處理圖，也可以用 GNN 分析量子電路。</li>
+        <li><strong>保持懷疑</strong>：qubit 少 ≠ 比較快；模擬 ≠ 真機；目前的成果多是 quantum utility。</li>
+      </ol>
+    </div>
+  </div>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/qgnn-challenges.md">wiki/concepts/qgnn-challenges</a> · <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/overview.md">wiki/overview</a></div>
+</section>
+
+<!-- ============ 20 ============ -->
+<section id="s20" class="quiz" data-wiki="models/qgnn-general-ansatz.md,concepts/data-encoding.md,concepts/circuits-as-graphs.md,concepts/advantage-vs-utility.md,concepts/barren-plateau.md,sources/S1-verdon-2019-qgnn.md,sources/S2-hu-2022-qugcn.md,sources/S3-ryu-2023-materials.md,sources/S4-aktar-2024-expressibility.md,sources/S5-ceschini-2026-review.md">
+  <h2>小測驗：點選答案看解析</h2>
+  <div class="qitem"><strong>1.</strong> QGCNN 和 QGRNN 的差別在參數綁定方式。QGCNN 的參數在哪裡共用？
+    <div class="opts"><button>不同時間步之間</button><button data-ok>不同節點／邊之間</button><button>不同 qubit 數的電路之間</button></div>
+    <div class="fb">跨節點共用參數帶來排列不變性，就像 CNN 的 kernel 在影像上共用。（QGRNN 才是跨時間步共用）</div></div>
+  <div class="qitem"><strong>2.</strong> Amplitude encoding 用約 log₂ d 個 qubit 就能裝 d 維向量，為什麼不一定比較快？
+    <div class="opts"><button>量測太準確</button><button data-ok>準備這個量子態一般仍需約 d 個操作</button><button>它只能編碼整數</button></div>
+    <div class="fb">qubit 數少不代表步驟少；資料載入與量測次數都要算進成本。</div></div>
+  <div class="qitem"><strong>3.</strong> S4 把量子電路轉成圖時，「節點」代表什麼？
+    <div class="opts"><button>一個 qubit 的狀態</button><button data-ok>一個量子閘（以及輸入、輸出）</button><button>一個分子裡的原子</button></div>
+    <div class="fb">閘是節點、同一條 qubit 線上的先後是邊；再用古典 GNN 預測電路的 expressibility。</div></div>
+  <div class="qitem"><strong>4.</strong> 「參數較少就達到接近古典模型的準確率」依 S5 的用詞屬於？
+    <div class="opts"><button>Quantum advantage</button><button data-ok>Quantum utility</button><button>Quantum-inspired</button></div>
+    <div class="fb">有實務好處，但沒有證明勝過最強的古典方法，也沒有計入完整成本。</div></div>
+  <div class="qitem"><strong>5.</strong> Barren plateau 和古典的梯度消失最大的不同是？
+    <div class="opts"><button>只發生在 CNN</button><button data-ok>主要隨 qubit 數增加而惡化</button><button>用 ReLU 就能解決</button></div>
+    <div class="fb">梯度的變異數隨 qubit 數指數縮小，即使電路不深也可能發生。</div></div>
+  <details><summary>參考文獻與 AI 使用聲明（點開）</summary>
+    S1 Verdon et al., arXiv:1909.12264 (2019)｜S2 Hu et al., IEEE ICCD 2022, doi:10.1109/ICCD56317.2022.00050｜S3 Ryu, Elala, Rhee, Materials 16:4300 (2023)｜S4 Aktar et al., arXiv:2405.08100 (2024)｜S5 Ceschini et al., Neural Comput. Appl. 38:731 (2026), doi:10.1007/s00521-026-12428-x。<br>
+    本簡報由 Claude（Anthropic）依本作業的 LLM Wiki 生成，課程作者負責選題、選文獻、裁決與審閱。完整書目見 Wiki 的 <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/index.md">文獻頁</a>。
+  </details>
+  <div class="src">來源：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/models/qgnn-general-ansatz.md">qgnn-general-ansatz</a> · <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/data-encoding.md">data-encoding</a> · <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/circuits-as-graphs.md">circuits-as-graphs</a> · <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/advantage-vs-utility.md">advantage-vs-utility</a> · <a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/concepts/barren-plateau.md">barren-plateau</a> · 書目：<a href="https://github.com/JoeyHuang329/genai_course_works_w10/blob/main/wiki/index.md">wiki/sources/S1–S5</a></div>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/math/math.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    width: 1280,
+    height: 720,
+    margin: 0.05,
+    transition: 'slide',
+    katex: { version: '0.16.11' },
+    plugins: [ RevealMath.KaTeX ]
+  });
+
+  // 小測驗：點選後標示對錯並顯示解析
+  document.querySelectorAll('.quiz .qitem').forEach(function (item) {
+    var buttons = item.querySelectorAll('button');
+    var fb = item.querySelector('.fb');
+    buttons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        buttons.forEach(function (b) {
+          b.classList.remove('right', 'wrong');
+          if (b.hasAttribute('data-ok')) b.classList.add('right');
+        });
+        if (!btn.hasAttribute('data-ok')) btn.classList.add('wrong');
+        fb.textContent = (btn.hasAttribute('data-ok') ? '✅ 答對了！' : '❌ 再想想。') + fb.textContent.replace(/^(✅ 答對了！|❌ 再想想。)/, '');
+        fb.classList.add('show');
+      });
+    });
+  });
+</script>
+</body>
+</html>

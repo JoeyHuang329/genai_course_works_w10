@@ -1,0 +1,23 @@
+投影片：20 張；KaTeX 展示型公式：6 個；KaTeX 錯誤：0 個
+slide 01 [s01]: OK
+slide 02 [s02]: OK
+slide 03 [s03]: OK
+slide 04 [s04]: OK
+slide 05 [s05]: OK
+slide 06 [s06]: OK
+slide 07 [s07]: OK
+slide 08 [s08]: OK
+slide 09 [s09]: OK
+slide 10 [s10]: OK
+slide 11 [s11]: OK
+slide 12 [s12]: OK
+slide 13 [s13]: OK
+slide 14 [s14]: OK
+slide 15 [s15]: OK
+slide 16 [s16]: OK
+slide 17 [s17]: OK
+slide 18 [s18]: OK
+slide 19 [s19]: OK
+slide 20 [s20]: OK
+
+結果：✅ 通過
